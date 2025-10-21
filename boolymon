@@ -1,0 +1,178 @@
+-- Guard: prevent duplicate init
+if getgenv().CombatScriptLoaded then return end
+getgenv().CombatScriptLoaded = true
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local TextChatService = game:GetService("TextChatService")
+local LP = Players.LocalPlayer
+
+-- State
+local attackingSolstice = false
+local attackingCannon = true
+local teleportAbove = true
+local alrasidFocus = false
+local alrasidDefeated = false
+
+-- Utility
+local function getRoot()
+    local c = LP.Character
+    return c and c:FindFirstChild("HumanoidRootPart")
+end
+
+local function getNearestTarget(maxDist, includeAlrasid)
+    local closestHumanoid, closestHRP
+    local minDist = maxDist or math.huge
+    local root = getRoot()
+    if not root then return end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Humanoid") and obj.Health > 0 then
+            local model = obj.Parent
+            if model and model:IsA("Model") and model:FindFirstChild("HumanoidRootPart") then
+                local isPlayerChar = Players:GetPlayerFromCharacter(model) ~= nil
+                local isSelf = model == LP.Character
+                local isTLSOC = (model.Name == "The Last Spirit of Christmas")
+                local isAlrasid = (model.Name == "Alrasid, Archbishop of the Equinox")
+                if not isSelf and not isPlayerChar and not isTLSOC and (includeAlrasid or not isAlrasid) then
+                    local hrp = model.HumanoidRootPart
+                    local dist = (hrp.Position - root.Position).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        closestHumanoid = obj
+                        closestHRP = hrp
+                    end
+                end
+            end
+        end
+    end
+    return closestHumanoid, closestHRP
+end
+
+-- Attack loops
+task.spawn(function()
+    local conn
+    while true do
+        task.wait(0.25)
+        if not attackingSolstice then if conn then conn:Disconnect(); conn=nil end continue end
+        local hum, hrp = getNearestTarget(200, alrasidFocus)
+        if hum and hrp then
+            if not conn then
+                conn = RunService.RenderStepped:Connect(function()
+                    local c = LP.Character
+                    if not c then return end
+                    local tool = c:FindFirstChild("Solstice") or LP.Backpack:FindFirstChild("Solstice")
+                    if not tool then return end
+                    local rf = tool:FindFirstChild("RemoteFunction")
+                    if not rf then return end
+                    local h, r = getNearestTarget(200, alrasidFocus)
+                    local root = getRoot()
+                    if h and r and root then
+                        pcall(function() rf:InvokeServer("shootspecial", { r.Position, root.Position, 12 }) end)
+                    end
+                end)
+            end
+        else if conn then conn:Disconnect(); conn=nil end end
+    end
+end)
+
+task.spawn(function()
+    local conn
+    while true do
+        task.wait(0.25)
+        if not attackingCannon or alrasidFocus then if conn then conn:Disconnect(); conn=nil end continue end
+        local hum, hrp = getNearestTarget(200, false)
+        if hum and hrp then
+            if not conn then
+                conn = RunService.RenderStepped:Connect(function()
+                    local c = LP.Character
+                    if not c then return end
+                    local tool = c:FindFirstChild("Equinox Cannon") or LP.Backpack:FindFirstChild("Equinox Cannon")
+                    if not tool then return end
+                    local rf = tool:FindFirstChild("RemoteFunction")
+                    if not rf then return end
+                    local h, r = getNearestTarget(200, false)
+                    if h and r then
+                        pcall(function() rf:InvokeServer("fire", { r.Position, r.Position - Vector3.new(0,2,0), 200 }) end)
+                    end
+                end)
+            end
+        else if conn then conn:Disconnect(); conn=nil end end
+    end
+end)
+
+-- Teleport loop
+task.spawn(function()
+    local conn
+    while true do
+        task.wait(0.25)
+        if not teleportAbove then if conn then conn:Disconnect(); conn=nil end continue end
+        if not conn then
+            conn = RunService.RenderStepped:Connect(function()
+                local root = getRoot()
+                if not root then return end
+                local enemyHum, enemyHRP = getNearestTarget(10000, false)
+                if enemyHum and enemyHRP then
+                    alrasidFocus = false
+                    root.CFrame = CFrame.new(enemyHRP.Position + Vector3.new(0,50,0))
+                    return
+                end
+                local alrasid = workspace:FindFirstChild("Alrasid, Archbishop of the Equinox")
+                if alrasid and alrasid:FindFirstChild("HumanoidRootPart") and alrasid:FindFirstChild("Humanoid") then
+                    local hum = alrasid.Humanoid
+                    if hum.Health > 0 then
+                        alrasidFocus = true
+                        attackingCannon = false
+                        attackingSolstice = true
+                        root.CFrame = CFrame.new(alrasid.HumanoidRootPart.Position + Vector3.new(0,50,0))
+                    elseif not alrasidDefeated then
+                        alrasidDefeated = true
+                        alrasidFocus = false
+                        local backpack = LP:FindFirstChild("Backpack")
+                        local artifact = LP.Character and (LP.Character:FindFirstChild("Mysterious Artifact") or (backpack and backpack:FindFirstChild("Mysterious Artifact")))
+                        if artifact and backpack and backpack:FindFirstChild("Mysterious Artifact") then
+                            artifact.Parent = LP.Character
+                            task.wait(0.5)
+                        end
+                        local PartyFunction = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("PartySystem"):WaitForChild("PartyFunction")
+                        pcall(function() PartyFunction:InvokeServer("createParty", { settings = { FriendsOnly = false, Visual = true }, subplace = "Stronghold" }) end)
+                        task.wait(1)
+                        pcall(function() PartyFunction:InvokeServer("joinSubplace", {}) end)
+                    end
+                else
+                    alrasidFocus = false
+                end
+            end)
+        end
+    end
+end)
+
+-- Toggles
+UIS.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.X then attackingSolstice = not attackingSolstice end
+    if input.KeyCode == Enum.KeyCode.C then attackingCannon   = not attackingCannon   end
+    if input.KeyCode == Enum.KeyCode.V then teleportAbove     = not teleportAbove     end
+end)
+
+-- Auto-skip cutscenes
+task.delay(5, function()
+    local ok, err = pcall(function()
+        local channel = TextChatService:WaitForChild("TextChannels"):WaitForChild("RBXGeneral")
+        channel:SendAsync("/skipall")
+    end)
+end)
+
+-- Respawn handling
+LP.CharacterAdded:Connect(function(c)
+    Character = c
+    c:WaitForChild("HumanoidRootPart")
+end)
+
+-- Queue on teleport (executor-specific)
+if queue_on_teleport then
+    queue_on_teleport([[
+        loadstring(game:HttpGet("https://your-hosted-script-url.com/script.lua"))()
+    ]])
+end
