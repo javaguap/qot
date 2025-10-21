@@ -173,6 +173,6 @@ end)
 -- Queue on teleport (executor-specific)
 if queue_on_teleport then
     queue_on_teleport([[
-        loadstring(game:HttpGet("https://your-hosted-script-url.com/script.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/javaguap/qot/refs/heads/main/boolymon"))()
     ]])
 end
