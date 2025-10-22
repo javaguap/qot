@@ -1,7 +1,5 @@
--- Per-place guard: prevents duplicates in the same place, but allows re-init after teleport
-getgenv().CombatBoot = getgenv().CombatBoot or {}
-if getgenv().CombatBoot[game.PlaceId] then return end
-getgenv().CombatBoot[game.PlaceId] = true
+if getgenv().CombatScriptLoaded then return end
+getgenv().CombatScriptLoaded = true
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UIS = game:GetService("UserInputService")
@@ -12,14 +10,12 @@ local TextChatService = game:GetService("TextChatService")
 local LP = Players.LocalPlayer
 local Character = LP.Character or LP.CharacterAdded:Wait()
 
--- Default states
 local attackingSolstice = false
-local attackingCannon = true   -- enabled by default
-local teleportAbove = true     -- enabled by default
+local attackingCannon = true
+local teleportAbove = true
 local alrasidFocus = false
 local alrasidDefeated = false
 
--- Handle respawn: update Character and reset toggles
 LP.CharacterAdded:Connect(function(c)
     Character = c
     c:WaitForChild("HumanoidRootPart")
@@ -29,7 +25,6 @@ LP.CharacterAdded:Connect(function(c)
     alrasidFocus = false
 end)
 
--- Wait 5s then send "/skipall" in chat using TextChatService
 task.delay(5, function()
     pcall(function()
         local channel = TextChatService:WaitForChild("TextChannels"):WaitForChild("RBXGeneral")
@@ -37,7 +32,6 @@ task.delay(5, function()
     end)
 end)
 
--- Toggle Solstice with X, Cannon with C, Teleport with V
 UIS.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.X then attackingSolstice = not attackingSolstice end
@@ -45,13 +39,11 @@ UIS.InputBegan:Connect(function(input, gpe)
     if input.KeyCode == Enum.KeyCode.V then teleportAbove = not teleportAbove end
 end)
 
--- Find nearest valid target, optionally including Alrasid
 local function getNearestTarget(maxDist, includeAlrasid)
     local closestHumanoid, closestHRP
     local minDist = maxDist or math.huge
     local root = Character:FindFirstChild("HumanoidRootPart")
     if not root then return end
-
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("Humanoid") and obj.Health > 0 then
             local model = obj.Parent
@@ -75,7 +67,6 @@ local function getNearestTarget(maxDist, includeAlrasid)
     return closestHumanoid, closestHRP
 end
 
--- Solstice attack loop
 task.spawn(function()
     local conn
     while true do
@@ -102,7 +93,6 @@ task.spawn(function()
     end
 end)
 
--- Cannon attack loop
 task.spawn(function()
     local conn
     while true do
@@ -128,7 +118,6 @@ task.spawn(function()
     end
 end)
 
--- Teleport-above loop
 task.spawn(function()
     local conn
     while true do
@@ -173,4 +162,3 @@ task.spawn(function()
         end
     end
 end)
-
