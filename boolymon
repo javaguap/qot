@@ -1,3 +1,7 @@
+-- Global guard: prevents duplicate execution
+if getgenv().CombatScriptLoaded then return end
+getgenv().CombatScriptLoaded = true
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -64,3 +68,5 @@ local function getNearestTarget(maxDist, includeAlrasid)
             end
         end
     end
+    return closestHumanoid, closestHRP
+end
