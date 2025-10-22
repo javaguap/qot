@@ -192,7 +192,10 @@ task.spawn(function()
 end)
 
 -- self‑requeue for infinite persistence
-if queue_on_teleport then
-    queue_on_teleport([[
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/javaguap/qot/refs/heads/main/boolymon"))()
-    ]])
+local queue = [[
+    wait(3)
+    print("queued script running")
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/javaguap/qot/refs/heads/main/boolymon"))()
+]]
+queue_on_teleport(queue)
+
