@@ -191,8 +191,17 @@ task.spawn(function()
     end
 end)
 
--- if not in target place, teleport there
+-- if not in target place, equip artifact and teleport there
 if game.PlaceId ~= 96516249626799 then
+    local backpack = LP:FindFirstChild("Backpack")
+    local artifact = Character:FindFirstChild("Mysterious Artifact") or (backpack and backpack:FindFirstChild("Mysterious Artifact"))
+    if artifact then
+        if backpack and backpack:FindFirstChild("Mysterious Artifact") then
+            artifact.Parent = Character
+        end
+        task.wait(0.5)
+    end
+
     local PartyFunction = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("PartySystem"):WaitForChild("PartyFunction")
 
     local args1 = {
@@ -216,5 +225,3 @@ local queue = [[
 if queue_on_teleport then
     queue_on_teleport(queue)
 end
-
-
