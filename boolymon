@@ -9,12 +9,11 @@ local Character = LP.Character or LP.CharacterAdded:Wait()
 
 -- Default states
 local attackingSolstice = false
-local attackingCannon = true   -- enabled by default
-local teleportAbove = true     -- enabled by default
+local attackingCannon = true
+local teleportAbove = true
 local alrasidFocus = false
 local alrasidDefeated = false
 
--- Handle respawn: update Character and reset toggles
 LP.CharacterAdded:Connect(function(c)
     Character = c
     c:WaitForChild("HumanoidRootPart")
@@ -24,12 +23,10 @@ LP.CharacterAdded:Connect(function(c)
     alrasidFocus = false
 end)
 
--- Wait 5s then send "/skipall" in chat using TextChatService
 task.wait(5)
 local channel = TextChatService:WaitForChild("TextChannels"):WaitForChild("RBXGeneral")
 channel:SendAsync("/skipall")
 
--- Toggle Solstice with X, Cannon with C, Teleport with V
 UIS.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.X then attackingSolstice = not attackingSolstice end
@@ -37,7 +34,6 @@ UIS.InputBegan:Connect(function(input, gpe)
     if input.KeyCode == Enum.KeyCode.V then teleportAbove = not teleportAbove end
 end)
 
--- Find nearest valid target, optionally including Alrasid
 local function getNearestTarget(maxDist, includeAlrasid)
     local closestHumanoid, closestHRP
     local minDist = maxDist or math.huge
@@ -68,7 +64,6 @@ local function getNearestTarget(maxDist, includeAlrasid)
     return closestHumanoid, closestHRP
 end
 
--- Solstice attack loop (200 stud range)
 task.spawn(function()
     local activeConnection = nil
     while true do
@@ -103,7 +98,6 @@ task.spawn(function()
     end
 end)
 
--- Equinox Cannon attack loop (200 stud range)
 task.spawn(function()
     local activeConnection = nil
     while true do
@@ -135,7 +129,6 @@ task.spawn(function()
     end
 end)
 
--- Teleport-above loop (V key) with 50-stud height and 10000-stud range
 task.spawn(function()
     local activeConnection = nil
     while true do
@@ -149,7 +142,6 @@ task.spawn(function()
                 local root = Character:FindFirstChild("HumanoidRootPart")
                 if not root then return end
 
-                -- Check for enemies first (excluding Alrasid)
                 local enemyHum, enemyHRP = getNearestTarget(10000, false)
                 if enemyHum and enemyHRP and enemyHum.Health > 0 then
                     alrasidFocus = false
@@ -157,7 +149,6 @@ task.spawn(function()
                     return
                 end
 
-                -- No enemies: check for Alrasid
                 local alrasid = workspace:FindFirstChild("Alrasid, Archbishop of the Equinox")
                 if alrasid and alrasid:FindFirstChild("HumanoidRootPart") and alrasid:FindFirstChild("Humanoid") then
                     local hum = alrasid.Humanoid
@@ -170,7 +161,6 @@ task.spawn(function()
                         alrasidDefeated = true
                         alrasidFocus = false
 
-                        -- Equip "Mysterious Artifact" before remotes
                         local backpack = LP:FindFirstChild("Backpack")
                         local artifact = Character:FindFirstChild("Mysterious Artifact") or (backpack and backpack:FindFirstChild("Mysterious Artifact"))
                         if artifact then
@@ -180,7 +170,6 @@ task.spawn(function()
                             task.wait(0.5)
                         end
 
-                        -- Run the succession remotes
                         local PartyFunction = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("PartySystem"):WaitForChild("PartyFunction")
 
                         local args1 = {
@@ -201,3 +190,9 @@ task.spawn(function()
         end
     end
 end)
+
+-- self‑requeue for infinite persistence
+if queue_on_teleport then
+    queue_on_teleport([[
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/javaguap/qot/refs/heads/main/boolymon"))()
+    ]])
